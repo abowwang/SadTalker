@@ -14,10 +14,12 @@ from modules.api import api
 from modules import paths_internal
 import gradio as gr
 from PIL import Image
-
+import urllib.request
+from urllib.parse import urlparse
 
 import torch, uuid
 import os, sys, shutil
+import base64
 from src.utils.preprocess import CropAndExtract
 from src.test_audio2coeff import Audio2Coeff  
 from src.facerender.animate import AnimateFromCoeff
@@ -94,36 +96,13 @@ class SadTalker():
         input_dir = os.path.join(save_dir, 'input')
         os.makedirs(input_dir, exist_ok=True)
 
-        print(source_image)
-        pic_path = os.path.join(input_dir, os.path.basename(source_image)) 
-        shutil.move(source_image, input_dir)
-
-        if driven_audio is not None and os.path.isfile(driven_audio):
-            audio_path = os.path.join(input_dir, os.path.basename(driven_audio))  
-
-            #### mp3 to wav
-            if '.mp3' in audio_path:
-                mp3_to_wav(driven_audio, audio_path.replace('.mp3', '.wav'), 16000)
-                audio_path = audio_path.replace('.mp3', '.wav')
-            else:
-                shutil.move(driven_audio, input_dir)
-
-        elif use_idle_mode:
-            audio_path = os.path.join(input_dir, 'idlemode_'+str(length_of_audio)+'.wav') ## generate audio from this new audio_path
-            from pydub import AudioSegment
-            one_sec_segment = AudioSegment.silent(duration=1000*length_of_audio)  #duration in milliseconds
-            one_sec_segment.export(audio_path, format="wav")
-        else:
-            print(use_ref_video, ref_info)
-            assert use_ref_video == True and ref_info == 'all'
-
-        if use_ref_video and ref_info == 'all': # full ref mode
-            ref_video_videoname = os.path.basename(ref_video)
-            audio_path = os.path.join(save_dir, ref_video_videoname+'.wav')
-            print('new audiopath:',audio_path)
-            # if ref_video contains audio, set the audio from ref_video.
-            cmd = r"ffmpeg -y -hide_banner -loglevel error -i %s %s"%(ref_video, audio_path)
-            os.system(cmd)        
+        # urllib.request.urlretrieve(source_image, input_dir)
+        source_image_name = os.path.basename(urlparse(source_image).path)
+        pic_path=os.path.join(input_dir, source_image_name)
+        urllib.request.urlretrieve(source_image, pic_path)
+        source_audio_name = os.path.basename(urlparse(driven_audio).path)
+        audio_path=os.path.join(input_dir, source_audio_name)
+        urllib.request.urlretrieve(driven_audio, audio_path)   
 
         os.makedirs(save_dir, exist_ok=True)
         
@@ -186,5 +165,10 @@ class SadTalker():
             torch.cuda.synchronize()
             
         import gc; gc.collect()
+
+        if return_path:
+            with open(return_path, "rb") as videoFile:
+                return base64.b64encode(videoFile.read())
+        else:
+            return ''
         
-        return return_path
