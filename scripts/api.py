@@ -34,14 +34,15 @@ from pydub import AudioSegment
 def sadtalker_api(_: gr.Blocks, app: FastAPI):
     @app.post("/sadtalker/generate")
     async def sadtalker_generate(
-        source_image: str = Body("",title="source face image"),
+        source_image: str = Body("",title="source image url"),
         source_audio: str = Body("",title="audio url"),
+        preprocess: str = Body("full",title="How to handle input image"),
+        still_mode: bool = Body(True,title="fewer head motion, works with preprocess `full`"),
+        use_enhancer: bool = Body(True,title="GFPGAN as Face enhancer"),
     ):
         st = SadTalker()
-        result = st.test(source_image=source_image,driven_audio=source_audio)
+        result = st.test(source_image=source_image,driven_audio=source_audio,preprocess=preprocess,still_mode=still_mode,use_enhancer=use_enhancer)
         return {'result':result}
-    
-    
 try:
     import modules.script_callbacks as script_callbacks
 
