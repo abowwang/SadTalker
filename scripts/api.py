@@ -16,6 +16,7 @@ import gradio as gr
 from PIL import Image
 import urllib.request
 from urllib.parse import urlparse
+from modules import script_callbacks
 
 import torch, uuid
 import os, sys, shutil
@@ -43,12 +44,6 @@ def sadtalker_api(_: gr.Blocks, app: FastAPI):
         st = SadTalker()
         result = st.test(source_image=source_image,driven_audio=source_audio,preprocess=preprocess,still_mode=still_mode,use_enhancer=use_enhancer)
         return {'result':result}
-try:
-    import modules.script_callbacks as script_callbacks
-
-    script_callbacks.on_app_started(sadtalker_api)
-except:
-    pass
 
 
 def mp3_to_wav(mp3_filename,wav_filename,frame_rate):
@@ -58,7 +53,7 @@ def mp3_to_wav(mp3_filename,wav_filename,frame_rate):
 
 class SadTalker():
 
-    def __init__(self, checkpoint_path='/home/ubuntu/stable-diffusion-webui/extensions/SadTalker/checkpoints', config_path='/home/ubuntu/stable-diffusion-webui/extensions/SadTalker/src/config', lazy_load=False):
+    def __init__(self, checkpoint_path='./checkpoints', config_path='./src/config', lazy_load=False):
 
         if torch.cuda.is_available() :
             device = "cuda"
@@ -173,3 +168,4 @@ class SadTalker():
         else:
             return ''
         
+script_callbacks.on_app_started(sadtalker_api)
